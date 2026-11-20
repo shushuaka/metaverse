@@ -8,8 +8,8 @@ import { readFile, writeFile, mkdir, lstat } from 'node:fs/promises';
 import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, extname, resolve, sep } from 'node:path';
-import { buildOffice, characterPath } from '../office.mjs';
-import { makeLive } from '../live.mjs';
+import { buildOffice, characterPath } from './office.mjs';
+import { makeLive } from './live.mjs';
 
 const HOST = process.env.AIO_3D_HOST || '0.0.0.0';
 const PORT = Number(process.env.AIO_3D_PORT || process.env.PORT || 4327);
