@@ -1,0 +1,68 @@
+{
+  "company": "먼작귀 AI 오피스",
+  "boss": "랏코",
+  "assistant": "쿠리만쥬",
+  "claudeFolder": "",
+  "bossCharacter": "랏코",
+  "assistantCharacter": "쿠리만쥬",
+  "teams": [
+    {
+      "name": "기획·제작팀",
+      "members": [
+        {
+          "id": "hachiware",
+          "name": "하치와레",
+          "character": "하치와레",
+          "tasks": ["기획서 초안 작성", "블로그·SNS 원고 쓰기", "안내문·이메일 작성"]
+        },
+        {
+          "id": "usagi",
+          "name": "우사기",
+          "character": "우사기",
+          "tasks": ["아이디어 브레인스토밍", "후킹 제목·카피 뽑기", "숏폼·트렌드 기획"]
+        },
+        {
+          "id": "chiikawa",
+          "name": "치이카와",
+          "character": "치이카와",
+          "tasks": ["핵심 내용 3줄 요약", "할 일 체크리스트 정리", "맞춤법·문장 다듬기"]
+        },
+        {
+          "id": "labor-yoroi",
+          "name": "노동 갑옷 씨",
+          "character": "노동갑옷씨",
+          "tasks": ["일거리 배분·접수 관리", "작업 일정·진척도 점검", "현장 지원 및 정리"]
+        }
+      ]
+    },
+    {
+      "name": "조사·검수팀",
+      "members": [
+        {
+          "id": "shisa",
+          "name": "시사",
+          "character": "시사",
+          "tasks": ["심층 자료 조사", "장단점 비교표 작성", "번역 및 용어 풀이"]
+        },
+        {
+          "id": "momonga",
+          "name": "모몽가",
+          "character": "모몽가",
+          "tasks": ["기획안 빈틈·허점 찾기", "원고 퀄리티 피드백", "최종 품질 검수"]
+        },
+        {
+          "id": "yoroi",
+          "name": "포셰트 갑옷 씨",
+          "character": "포셰트갑옷씨",
+          "tasks": ["시각 자료·PPT 템플릿 제작", "최종 문서 패키징 및 포맷팅", "사내 비품 관리 및 팀원 서포트"]
+        },
+        {
+          "id": "ramen-yoroi",
+          "name": "라멘 갑옷 씨",
+          "character": "라멘갑옷씨",
+          "tasks": ["데이터 정밀 검증 및 팩트체크", "고객 후기·피드백 분석 리포트", "팀 사기 진작 및 복지 챙기기"]
+        }
+      ]
+    }
+  ]
+}
