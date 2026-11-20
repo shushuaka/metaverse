@@ -30,7 +30,7 @@ function getLanAddresses() {
   return out;
 }
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OFFICE_ROOT = resolve(HERE);
+const OFFICE_ROOT = HERE;
 const ROOT = resolve(HERE, 'public');
 
 const TYPES = {
