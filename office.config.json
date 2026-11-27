@@ -1,0 +1,85 @@
+{
+  "company": "먼작귀 AI 오피스",
+  "boss": "랏코",
+  "assistant": "쿠리만쥬",
+  "claudeFolder": "",
+  "bossCharacter": "랏코",
+  "assistantCharacter": "쿠리만쥬",
+  "teams": [
+    {
+      "name": "개발팀",
+      "members": [
+        {
+          "id": "hachiware",
+          "name": "하치와레",
+          "character": "하치와레",
+          "tasks": ["프론트엔드 화면·UI 개발", "사용자 기능 구현", "브라우저 동작 확인"]
+        },
+        {
+          "id": "ramen-yoroi",
+          "name": "라멘 갑옷 씨",
+          "character": "라멘갑옷씨",
+          "tasks": ["백엔드 서버·API 개발", "데이터 저장 구조 관리", "로그·사용 데이터 분석"]
+        },
+        {
+          "id": "momonga",
+          "name": "모몽가",
+          "character": "모몽가",
+          "tasks": ["코드 리뷰", "버그·보안 허점 찾기", "테스트 및 출시 전 검수"]
+        }
+      ]
+    },
+    {
+      "name": "AI 콘텐츠랩",
+      "members": [
+        {
+          "id": "usagi",
+          "name": "우사기",
+          "character": "우사기",
+          "tasks": ["숏폼 기획·후킹 설계", "트렌드 분석", "30일 콘텐츠 캘린더"]
+        },
+        {
+          "id": "siren",
+          "name": "세이렌",
+          "character": "세이렌",
+          "tasks": ["나노바나나 키프레임 프롬프트", "시댄스 영상 프롬프트", "프롬프트 개선·재생성안"]
+        },
+        {
+          "id": "kani",
+          "name": "카니",
+          "character": "카니",
+          "tasks": ["캐릭터 얼굴 일관성 검수", "완성 영상 점수 평가", "재촬영 구간 지적"]
+        },
+        {
+          "id": "yoroi",
+          "name": "포셰트 갑옷 씨",
+          "character": "포셰트갑옷씨",
+          "tasks": ["캡컷 자막·편집 가이드", "캡션·해시태그·고정 댓글", "업로드 패키징"]
+        }
+      ]
+    },
+    {
+      "name": "전략·운영팀",
+      "members": [
+        {
+          "id": "labor-yoroi",
+          "name": "노동 갑옷 씨",
+          "character": "노동갑옷씨",
+          "tasks": ["업무 배분·우선순위", "일정·진척도 관리", "주간 현황 보고"]
+        },
+        {
+          "id": "shisa",
+          "name": "시사",
+          "character": "시사",
+          "tasks": ["AI 도구·모델 리서치", "장단점 비교표", "도입 추천 보고서"]
+        },
+        {
+          "id": "chiikawa",
+          "name": "치이카와",
+          "character": "치이카와",
+          "tasks": ["README·가이드 문서화", "핵심 3줄 요약", "문서 링크·용어 정리"]
+        }
+      ]
+    }
+  ]
+}
