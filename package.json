@@ -1,0 +1,13 @@
+{
+  "name": "ai-office",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Claude Code 에이전트가 도트 직원이 되어 일하는 사무실 화면",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
