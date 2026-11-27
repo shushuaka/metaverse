@@ -1,0 +1,1312 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>먼작귀 AI 오피스 메타버스</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="viewport"></div>
+  <div id="private-vignette" aria-hidden="true"></div>
+
+  <!-- 로딩 화면 -->
+  <div id="loading">
+    <div class="loading-card">
+      <div class="loading-badge">METAVERSE · ZEP MODE</div>
+      <h1 id="loading-title">먼작귀 AI 오피스</h1>
+      <p id="loading-sub">파스텔 오피스와 캐릭터들을 불러오는 중...</p>
+      <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- ZEP 스타일 입장 / 내 캐릭터 커스터마이징 모달 -->
+  <div id="profile-overlay" hidden>
+    <div class="profile-modal">
+      <button class="close-btn" id="profile-close" hidden title="닫기">×</button>
+      <div class="profile-head">
+        <span class="loading-badge">MY AVATAR STUDIO</span>
+        <h2 id="profile-title">내 캐릭터 설정하고 입장하기</h2>
+        <p>다른 탭이나 친구와 함께 각자의 캐릭터·닉네임으로 실시간 대화할 수 있어요!</p>
+      </div>
+
+      <div class="profile-layout">
+        <!-- 좌측: 미리보기 & 닉네임 -->
+        <div class="profile-preview-col">
+          <div class="preview-stage" id="preview-stage">
+            <div class="preview-tag" id="preview-tag">랏코</div>
+            <img id="preview-img" alt="아바타 미리보기" />
+            <div class="preview-status" id="preview-status">메타버스 탐험 중 ✨</div>
+          </div>
+
+          <label class="field">
+            <span>닉네임</span>
+            <input id="input-nickname" type="text" maxlength="16" placeholder="예: 랏코 대표, 서윤, 민수" />
+          </label>
+          <label class="field">
+            <span>상태 메시지 (선택)</span>
+            <input id="input-status" type="text" maxlength="24" placeholder="예: 회의 중, 커피 한 잔 ☕" />
+          </label>
+          <label class="field" id="join-passcode-field" hidden>
+            <span>🔐 입장 비밀번호 (방 잠금됨)</span>
+            <input id="input-passcode" type="password" maxlength="20" placeholder="호스트가 설정한 비밀번호 입력" />
+          </label>
+          <div class="field">
+            <span>이름표 컬러</span>
+            <div class="color-swatches" id="color-swatches"></div>
+          </div>
+        </div>
+
+        <!-- 우측: 캐릭터 선택 + 내 이미지 업로드 -->
+        <div class="profile-picker-col">
+          <div class="picker-head">
+            <strong>캐릭터 선택</strong>
+            <label class="upload-btn">
+              🖼️ 내 그림 업로드
+              <input id="input-avatar-file" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+            </label>
+          </div>
+          <div class="char-grid" id="char-grid"></div>
+          <p class="picker-tip">💡 새 탭으로 <b>http://localhost:4327</b> 을 하나 더 열면 두 명이 동시에 각자 캐릭터로 대화하는 걸 바로 테스트할 수 있어요!</p>
+        </div>
+      </div>
+
+      <div class="profile-foot">
+        <button class="enter-btn" id="btn-enter-world">✨ 이 캐릭터로 입장 / 적용하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 최좌측 ZEP 공식 세로 아이콘 레일 (1.png 좌측 52px 바) -->
+  <nav class="zep-sidebar-rail" id="zep-sidebar-rail" aria-label="ZEP 좌측 도구 모음">
+    <div class="zep-rail-top">
+      <button type="button" class="zep-rail-btn" id="rail-btn-menu" title="ZEP 협업 도구 (타이머 · 투표 · 미디어 · 저전력)">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <button type="button" class="zep-rail-btn" id="rail-btn-announce" title="전체 방송(스포트라이트)">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 0 0 2 2h2l5 4V5L7 9H5a2 2 0 0 0-2 2z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg>
+      </button>
+      <button type="button" class="zep-rail-btn" id="rail-btn-map" title="미니맵 열기/닫기">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.3-6-10a6 6 0 1 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>
+      </button>
+      <button type="button" class="zep-rail-btn" id="rail-btn-link" title="친구 초대 링크">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l2.92-2.92a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-2.92 2.92a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </button>
+      <span class="zep-rail-sep"></span>
+      <button type="button" class="zep-rail-btn app-ico" id="rail-btn-members" title="멤버 목록 크게 열기/닫기">👥</button>
+      <button type="button" class="zep-rail-btn app-ico" id="rail-btn-seat" title="내 지정 좌석 선택 · 변경">🏷️</button>
+      <button type="button" class="zep-rail-btn app-ico" id="rail-btn-board" title="공유 화이트보드">🎨</button>
+      <button type="button" class="zep-rail-btn app-ico" id="rail-btn-games" title="OX 퀴즈 · 돌림판 · 보물찾기">🎮</button>
+      <button type="button" class="zep-rail-btn app-ico" id="rail-btn-build" title="맵 꾸미기 (B)">🪑</button>
+      <button type="button" class="zep-rail-btn app-ico" id="rail-btn-embed" title="유튜브 · 웹 공유 스크린">📺</button>
+      <button type="button" class="zep-rail-btn app-ico" id="rail-btn-control" title="🛡️ 관리실 · 보안 관제실 (CCTV · 채팅감시 · 강퇴/밴)">🛡️</button>
+      <button type="button" class="zep-rail-btn app-ico" id="rail-btn-inquiry" title="📨 관리자에게 문의하기">📨<i class="rail-dot" id="inquiry-rail-dot" hidden></i></button>
+    </div>
+    <div class="zep-rail-bottom">
+      <button type="button" class="zep-rail-btn active" id="rail-btn-chat" title="채팅창 열기/닫기">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 3v-3H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm3 6a1.2 1.2 0 1 0 0 2.4A1.2 1.2 0 0 0 7 10zm5 0a1.2 1.2 0 1 0 0 2.4A1.2 1.2 0 0 0 12 10zm5 0a1.2 1.2 0 1 0 0 2.4A1.2 1.2 0 0 0 17 10z"/></svg>
+      </button>
+      <button type="button" class="zep-rail-btn" id="rail-btn-help" title="조작법 안내 (H)">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.6 2.6 0 0 1 5 .8c0 1.7-2.5 2.1-2.5 3.7"/><circle cx="12" cy="17.2" r="0.8" fill="currentColor"/></svg>
+      </button>
+      <button type="button" class="zep-rail-btn" id="rail-btn-settings" title="공간 설정 (날씨 · 시간대 · 손들기 · 구역)">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <button type="button" class="zep-rail-avatar" id="rail-btn-profile" title="내 캐릭터 · 프로필 설정">
+        <img id="rail-my-avatar" alt="내 프로필" />
+      </button>
+    </div>
+  </nav>
+
+  <!-- 좌측 상단 ZEP 퀵 아이콘 버튼 (1.png 상단 [멤버목록] [My 내자리] 스타일) -->
+  <div class="zep-quick-shortcuts" id="zep-quick-shortcuts">
+    <button type="button" class="zep-quick-btn" id="btn-quick-members" title="멤버 목록 크게 펼쳐 보기">
+      <span>👥</span>
+      <i class="zep-quick-tag">목록</i>
+    </button>
+    <button type="button" class="zep-quick-btn" id="btn-quick-seat" title="내 자리로 바로 이동">
+      <span>🪑</span>
+      <i class="zep-quick-tag my">My</i>
+    </button>
+  </div>
+
+  <!-- 좌측 상단 ZEP 스타일 멤버 목록 패널 (아이콘 클릭 시 크게 펼쳐짐) -->
+  <aside class="hud zep-left-panel" id="zep-left-panel" hidden>
+    <div class="zep-left-head">
+      <strong id="brand">멤버 목록</strong>
+      <div class="zep-left-head-actions">
+        <button type="button" class="zep-icon-flat" id="btn-left-settings" title="공간 설정 (위치 · 날씨 · 시간대 · 손들기 · 미니맵)">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+        <button type="button" class="zep-icon-flat" id="btn-left-min" title="접기/펼치기">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true">
+            <path d="M5 12h14"></path>
+          </svg>
+        </button>
+        <button type="button" class="zep-icon-flat" id="btn-left-close" title="패널 숨기기">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ⚙️ 공간 설정 팝오버 (위치 · 날씨 · 시간대 · 손들기 · 모드) -->
+    <div class="zep-settings-popover" id="zep-settings-popover" hidden>
+      <div class="zep-set-row">
+        <span class="zep-set-label">현재 구역</span>
+        <span class="zone-pill" id="zone-name">교무실</span>
+      </div>
+      <div class="zep-set-row">
+        <span class="zep-set-label">공간 상태</span>
+        <span class="mode-pill" id="world-mode">일상 근무 중</span>
+      </div>
+      <div class="zep-set-btns">
+        <button type="button" class="pill-btn" id="btn-weather" title="실제 서울 날씨 실시간 연동">서울 날씨...</button>
+        <button type="button" class="pill-btn" id="btn-sky" title="시간대/분위기 전환 (T)">☀️ 낮</button>
+        <button type="button" class="pill-btn" id="btn-hand-raise" title="손들기 ON/OFF">✋ 손들기</button>
+        <button type="button" class="pill-btn" id="btn-minimap-toggle" title="미니맵 열기/닫기">🗺️ 미니맵</button>
+      </div>
+      <div class="staff-stat" id="staff-stat" hidden>AI 직원 <b id="staff-count">0</b>명</div>
+    </div>
+
+    <div class="zep-left-body" id="zep-left-body">
+      <!-- 내 상태 & 내 자리 바로가기 (1.png '나 [온라인▾] [내 자리→]' 스타일) -->
+      <div class="zep-left-me">
+        <span class="zep-me-label">나</span>
+        <div class="zep-me-actions">
+          <div class="presence-wrap">
+            <button type="button" class="zep-status-pill online" id="btn-presence" title="내 상태 변경">💻 온라인</button>
+            <div class="presence-menu zep-presence-menu" id="presence-menu" hidden>
+              <button type="button" class="selected" data-presence="online"><span class="pm-left"><i>💻</i>온라인</span><span class="pm-check">✓</span></button>
+              <button type="button" data-presence="study"><span class="pm-left"><i>📚</i>학습중</span><span class="pm-check">✓</span></button>
+              <button type="button" data-presence="class"><span class="pm-left"><i>🪑</i>수업중</span><span class="pm-check">✓</span></button>
+              <button type="button" data-presence="mentoring"><span class="pm-left"><i>💬</i>멘토링중</span><span class="pm-check">✓</span></button>
+              <div class="pm-divider"></div>
+              <button type="button" data-presence="restroom"><span class="pm-left"><i>🚽</i>화장실</span><span class="pm-check">✓</span></button>
+              <button type="button" data-presence="afk"><span class="pm-left"><i>🕒</i>자리비움</span><span class="pm-check">✓</span></button>
+              <button type="button" data-presence="dnd"><span class="pm-left"><i>⛔</i>방해금지</span><span class="pm-check">✓</span></button>
+            </div>
+          </div>
+          <button type="button" class="zep-seat-btn" id="btn-my-seat" title="내 자리로 바로 이동">내 자리 →</button>
+        </div>
+      </div>
+
+      <!-- 멤버 검색 입력창 -->
+      <div class="zep-left-search">
+        <input type="text" id="left-member-search" placeholder="멤버를 검색해보세요." autocomplete="off" />
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-3.6-3.6"></path>
+        </svg>
+      </div>
+
+      <!-- 그룹 아코디언 헤더 (1.png '| 게스트 1/1 ^' 스타일) -->
+      <button type="button" class="zep-left-group-head" id="left-group-toggle">
+        <span class="zep-group-title"><i class="zep-group-bar"></i>오피스 멤버 <small id="left-member-count">1/1</small></span>
+        <svg class="zep-chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m18 15-6-6-6 6"></path>
+        </svg>
+      </button>
+
+      <!-- 실시간 멤버 리스트 (마이크·캠 상태 아이콘 + 온라인 배지) -->
+      <div class="zep-left-list" id="left-members-list"></div>
+    </div>
+  </aside>
+
+  <!-- 좌측 상단 패널 닫았을 때 재오픈 버튼 -->
+  <button type="button" class="zep-left-reopen" id="btn-left-reopen" hidden title="멤버 목록 열기">👥 멤버 목록</button>
+
+  <!-- 상단 중앙 ZEP 다크 카메라/줌 컨트롤 바 (1.png 상단 중앙 스타일) -->
+  <div class="zep-top-center-wrap">
+    <div class="zep-cam-pill" id="zep-cam-pill">
+      <button type="button" class="zep-cam-btn" id="btn-cam-reset" title="시점 초기화">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+          <path d="M21 3v6h-6"></path>
+        </svg>
+      </button>
+      <span class="zep-cam-sep"></span>
+      <button type="button" class="zep-cam-btn" id="btn-cam-out" title="축소 (멀리 보기)">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path d="M5 12h14"></path>
+        </svg>
+      </button>
+      <button type="button" class="zep-cam-btn" id="btn-cam-in" title="확대 (가까이 보기)">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14"></path>
+        </svg>
+      </button>
+      <span class="zep-cam-sep"></span>
+      <button type="button" class="zep-cam-btn" id="btn-cam-cycle" title="화면 이동 (켜고 드래그하면 맵을 자유롭게 둘러볼 수 있어요)">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="zep-status-chips">
+      <div class="private-pill" id="private-badge" hidden title="같은 프라이빗 구역 안 사람들끼리만 대화·음성이 들려요">🔒 프라이빗 존</div>
+      <div class="podium-pill" id="podium-badge" hidden title="발표 단상 위에서는 거리·구역과 무관하게 전원에게 송출됩니다">🎤 발표 단상 LIVE</div>
+      <div class="bgm-pill" id="bgm-pill" hidden title="공간 자동 Lo-Fi BGM 재생 중">🎵 Lo-Fi BGM</div>
+    </div>
+  </div>
+
+  <!-- 우측 상단 ZEP 스타일 알림 · 사용자 목록 · 초대하기 바 (1.png & 3.png 스타일) -->
+  <div class="zep-topright" id="zep-topright">
+    <button type="button" class="zep-top-icon-btn notif-bell-btn" id="btn-notif-bell" title="알림 센터">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+        <path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6v-5a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-1.7 1.7A1 1 0 0 0 4 19.4h16a1 1 0 0 0 .7-1.7L19 16Z"/>
+      </svg>
+      <span class="notif-dot" id="notif-dot" hidden></span>
+    </button>
+    <div class="zep-users-invite-pill">
+      <button type="button" class="zep-users-trigger" id="btn-users-drawer" title="사용자 목록 열기/닫기">
+        <span class="zep-online-dot"></span>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
+          <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.33 0-8 1.67-8 5v1h16v-1c0-3.33-4.67-5-8-5Z"/>
+        </svg>
+        <b id="online-count">1</b>
+      </button>
+      <button type="button" class="zep-invite-btn" id="btn-invite" title="친구 초대 주소 보기">초대하기</button>
+    </div>
+  </div>
+
+  <!-- 우측 상단 ZEP 스타일 사용자 목록 카드 (3.png 스타일) -->
+  <aside class="hud zep-users-drawer" id="users-drawer" hidden>
+    <div class="zep-users-head">
+      <strong>사용자 목록</strong>
+      <div class="zep-users-head-actions">
+        <button type="button" class="zep-icon-flat" id="btn-users-search" title="사용자 검색">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m20 20-3.6-3.6"></path>
+          </svg>
+        </button>
+        <button type="button" class="zep-icon-flat" id="btn-users-close" title="닫기">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="zep-users-search-wrap" id="users-search-wrap" hidden>
+      <input type="text" id="users-search-input" placeholder="이름으로 검색..." autocomplete="off" />
+    </div>
+    <button type="button" class="zep-users-group-head" id="users-group-toggle">
+      <span>일반 사용자 (<span id="tab-user-count">1</span>)</span>
+      <svg class="zep-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m18 15-6-6-6 6"></path>
+      </svg>
+    </button>
+    <div class="users-list zep-users-list" id="users-list"></div>
+  </aside>
+
+  <!-- ZEP 저전력 모드 배너 (4.png 상단 스타일) -->
+  <div class="hud lowpower-banner" id="lowpower-banner" hidden>
+    <span class="lp-ico">🔋</span>
+    <strong>저전력 모드 실행</strong>
+    <button type="button" class="lp-exit-btn" id="btn-lowpower-exit">종료</button>
+  </div>
+
+  <!-- 공유 카운트다운 타이머 HUD -->
+  <div class="hud timer-pill-hud" id="timer-pill-hud" hidden>
+    <span>⏱️</span>
+    <span id="timer-hud-label">회의 타이머</span>
+    <strong id="timer-hud-clock">05:00</strong>
+    <button type="button" class="timer-mini-btn" id="timer-hud-toggle" title="일시정지/재개">⏸</button>
+    <button type="button" class="timer-mini-btn" id="timer-hud-stop" title="종료">✕</button>
+  </div>
+
+  <!-- 사용자 따라가기(Follow) 상태 배너 -->
+  <div class="hud follow-banner" id="follow-banner" hidden>
+    <span>👣</span>
+    <strong id="follow-banner-name">접속자</strong>
+    <span>님을 따라가는 중</span>
+    <button type="button" class="lp-exit-btn" id="btn-follow-stop">해제</button>
+  </div>
+
+  <!-- 실시간 투표(Poll) 플로팅 카드 -->
+  <aside class="hud poll-card" id="poll-card" hidden>
+    <div class="poll-card-head">
+      <span class="poll-tag">🗳️ 실시간 투표</span>
+      <div class="poll-head-btns">
+        <button type="button" class="poll-mini-btn" id="poll-close-vote" title="투표 마감">마감</button>
+        <button type="button" class="poll-mini-btn" id="poll-dismiss" title="닫기">✕</button>
+      </div>
+    </div>
+    <div class="poll-card-q" id="poll-card-q">질문</div>
+    <div class="poll-card-meta" id="poll-card-meta"></div>
+    <div class="poll-card-options" id="poll-card-options"></div>
+  </aside>
+
+  <!-- 우측 상단 알림 센터 드로어 -->
+  <aside class="hud notif-drawer" id="notif-drawer" hidden>
+    <div class="dm-head">
+      <h3>🔔 알림</h3>
+      <div class="dm-head-actions">
+        <button type="button" class="poll-mini-btn" id="notif-clear">비우기</button>
+        <button type="button" class="dm-icon-btn" id="notif-close">✕</button>
+      </div>
+    </div>
+    <div class="notif-list" id="notif-list"></div>
+  </aside>
+
+  <!-- 화면공유 / 발표자 크게 보기 스테이지 오버레이 -->
+  <div class="hud video-stage" id="video-stage" hidden>
+    <div class="video-stage-head">
+      <div class="video-stage-title-wrap">
+        <span class="video-stage-live" id="video-stage-live" hidden>🖥️ 화면공유</span>
+        <strong id="video-stage-label">발표 화면</strong>
+      </div>
+      <div class="dm-head-actions">
+        <button type="button" class="act-btn" id="video-stage-fullscreen" title="전체화면">⛶ 전체화면</button>
+        <button type="button" class="close-btn" id="video-stage-close" title="축소 (Esc)">×</button>
+      </div>
+    </div>
+    <video id="video-stage-stream" autoplay muted playsinline></video>
+  </div>
+
+  <!-- 내 화면공유 진행 중 상단 상태 바 -->
+  <div class="hud screen-share-bar" id="screen-share-bar" hidden>
+    <span class="embed-live-dot">LIVE</span>
+    <span>🖥️ 내 화면을 실시간 공유 중입니다</span>
+    <button type="button" class="act-btn" id="btn-screen-preview">⛶ 미리보기</button>
+    <button type="button" class="act-btn danger" id="btn-screen-stop">⏹ 공유 중지</button>
+  </div>
+
+  <!-- 포토존 촬영 플래시 & 이미지 확대 라이트박스 -->
+  <div id="photo-flash" hidden></div>
+  <div id="img-lightbox" hidden><img id="lightbox-img" alt="확대 이미지" /></div>
+
+  <!-- ZEP 스타일 프라이빗 영역 입장/퇴장 알림 배너 -->
+  <div class="hud private-toast" id="private-toast" hidden>
+    <svg class="lock-svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+      <path d="M17 10h-1V7a4 4 0 0 0-8 0v3H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Zm-7-3a2 2 0 1 1 4 0v3h-4V7Z"/>
+    </svg>
+    <span id="private-toast-text">프라이빗 영역에 입장했습니다</span>
+  </div>
+
+  <!-- 실시간 공유 스크린 라이브 배너 (누군가 유튜브/웹페이지 공유 시 전체 표시) -->
+  <div class="hud embed-live-banner" id="embed-live-banner" hidden>
+    <span class="embed-live-dot">LIVE</span>
+    <span class="embed-live-text" id="embed-live-text">📺 공유 스크린 활성화</span>
+    <button type="button" class="act-btn primary" id="btn-embed-live-open">▶ 함께 보기</button>
+    <button type="button" class="close-btn" id="btn-embed-live-hide" title="배너 숨기기">×</button>
+  </div>
+
+  <!-- 스포트라이트 전체 방송 배너 -->
+  <div class="hud spotlight-banner" id="spotlight-banner" hidden>
+    <span class="sp-tag">📢 스포트라이트 방송</span>
+    <strong id="sp-who">랏코</strong>
+    <span id="sp-text">전 직원 주목해 주세요!</span>
+  </div>
+
+  <!-- ZEP 스타일 상단 실시간 화상 캠 도크 -->
+  <div id="video-dock" hidden></div>
+
+  <!-- OX 퀴즈 진행 배너 -->
+  <div class="hud quiz-banner" id="quiz-banner" hidden>
+    <div class="quiz-banner-top">
+      <span class="sp-tag">⭕❌ OX 퀴즈</span>
+      <strong id="quiz-banner-q">문제</strong>
+      <span class="quiz-timer" id="quiz-banner-timer">10초</span>
+    </div>
+    <div class="quiz-result" id="quiz-banner-result" hidden></div>
+  </div>
+
+  <!-- 우측 상단 미니맵 & 빠른 이동 (🗺️ 버튼으로 토글) -->
+  <aside class="hud minimap-card" id="minimap-card" hidden>
+    <div class="minimap-head">
+      <span>🗺️ 미니맵</span>
+      <div class="dm-head-actions">
+        <span class="mini-hint">클릭 이동</span>
+        <button type="button" class="zep-icon-flat" id="btn-minimap-close" title="닫기">×</button>
+      </div>
+    </div>
+    <canvas id="minimap" width="210" height="165"></canvas>
+    <div class="warp-row">
+      <button data-warp="team0">1반</button>
+      <button data-warp="team1">2반</button>
+      <button data-warp="ceo">교무실</button>
+      <button data-warp="meeting">도서실</button>
+      <button data-warp="stage">무대</button>
+      <button data-warp="ox">OX광장</button>
+    </div>
+    <div class="warp-row warp-row-2">
+      <button data-warp="lounge">🍞 매점</button>
+      <button data-warp="rooftop">☁️ 루프탑</button>
+      <button data-warp="secret">🔮 아지트</button>
+      <button data-warp="control">🛡️ 관제실</button>
+    </div>
+  </aside>
+
+  <!-- 좌측 하단 ZEP 스타일 반투명 채팅창 / 크게 보기 시 전체 높이 흰색 도킹 패널 (1.png & 2.png 스타일) -->
+  <section class="chat-panel zep-chat-panel" id="chat-panel">
+    <span class="chat-zone-tag" id="chat-zone-tag" hidden>🔒 스터디룸</span>
+    <div class="chat-body" id="chat-body">
+      <div class="chat-stage" id="chat-stage">
+        <!-- 크게 보기(도킹) 시 상단 헤더 바 + 플로팅 시 우측 상단 3버튼 컨트롤 -->
+        <div class="chat-dock-head">
+          <strong class="chat-dock-title">채팅</strong>
+          <div class="chat-win-controls">
+            <button type="button" class="chat-ctrl-btn" id="chat-btn-pip" title="플로팅 미니 채팅 전환">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="2.5"></rect>
+                <rect x="12" y="12" width="6" height="5" rx="1" fill="currentColor"></rect>
+              </svg>
+            </button>
+            <button type="button" class="chat-ctrl-btn" id="chat-btn-expand" title="ZEP 스타일 크게 보기 / 기본 크기 전환">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+              </svg>
+            </button>
+            <button type="button" class="chat-ctrl-btn" id="chat-collapse" title="채팅창 닫기">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages"></div>
+
+        <!-- ZEP 스타일 프라이빗 채팅 안내 배너 -->
+        <div class="private-chat-notice" id="private-chat-notice" hidden>
+          <span class="notice-lock">🔒</span>
+          <span>프라이빗 채팅은 같은 영역에 있는<br/>사용자들만 볼 수 있습니다.</span>
+        </div>
+      </div>
+
+      <!-- ZEP 스타일 분리된 순백색 전체 / 프라이빗 선택 & 입력 카드 -->
+      <div class="zep-chat-composer" id="zep-chat-composer">
+        <div class="zep-scope-tabs" id="zep-scope-tabs">
+          <button type="button" class="zep-scope-btn on" id="btn-scope-all" data-send-scope="all">
+            <span>전체</span>
+            <span class="unread-dot" id="dot-all" hidden></span>
+          </button>
+          <button type="button" class="zep-scope-btn locked" id="btn-scope-private" data-send-scope="private" title="프라이빗 영역 안에서 사용 가능">
+            <svg class="lock-svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+              <path d="M17 10h-1V7a4 4 0 0 0-8 0v3H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Zm-7-3a2 2 0 1 1 4 0v3h-4V7Z"/>
+            </svg>
+            <span>프라이빗</span>
+            <span class="unread-dot" id="dot-private" hidden></span>
+          </button>
+        </div>
+
+        <form class="chat-input-form" id="chat-form" autocomplete="off">
+          <span class="spotlight-chip" id="spotlight-chip" hidden>📣 방송</span>
+          <label class="attach-img-btn" title="이미지 첨부">
+            🖼️
+            <input id="chat-img-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+          </label>
+          <input id="chat-input" type="text" maxlength="200" placeholder="채팅을 입력해 주세요" />
+          <button type="submit" class="send-btn zep-send-btn" id="btn-chat-send" title="전송 (Enter)">↑</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- 채팅창 닫았을 때 좌측 하단 재오픈 버튼 -->
+  <button type="button" class="zep-chat-reopen" id="chat-reopen-btn" hidden title="채팅창 열기">💬 채팅</button>
+
+  <!-- 알림 토스트 -->
+  <div class="hud toast" id="toast" hidden>
+    <img id="toast-avatar" alt="" />
+    <div class="toast-body">
+      <div class="toast-name" id="toast-name">쿠리만쥬 비서</div>
+      <div class="toast-text" id="toast-text"></div>
+    </div>
+  </div>
+
+  <!-- 인터랙션 안내 배지 -->
+  <div class="hud interact-hint" id="interact-hint" hidden>
+    <kbd>E</kbd> <span id="interact-label">대화하기</span>
+  </div>
+
+  <!-- 먼작귀 LIVE STAGE 전용 댄스 컨트롤 바 -->
+  <div class="hud dance-bar" id="dance-bar" hidden>
+    <span class="dance-badge">★ LIVE STAGE</span>
+    <button class="dance-btn" data-dance="bounce">🎵 통통</button>
+    <button class="dance-btn" data-dance="spin">🌀 빙글빙글</button>
+    <button class="dance-btn" data-dance="wave">🕺 스텝</button>
+    <button class="dance-btn" data-dance="star">🌟 스타점프</button>
+    <button class="dance-btn" id="btn-dance-bgm" title="무대 신나는 BGM 켜기/끄기">🔇 음악</button>
+    <button class="dance-btn stop" id="btn-dance-stop">⏹ 멈춤</button>
+  </div>
+
+  <!-- NPC 대화 / 상호작용 패널 -->
+  <section class="hud npc-panel" id="npc-panel" hidden>
+    <button class="close-btn" id="npc-close" title="닫기 (Esc)">×</button>
+    <div class="npc-head">
+      <div class="npc-avatar-box"><img id="npc-img" alt="" /></div>
+      <div class="npc-meta">
+        <div class="npc-name-row">
+          <strong id="npc-name">하치와레</strong>
+          <span class="npc-team" id="npc-team">기획·제작팀</span>
+        </div>
+        <div class="npc-state" id="npc-state">자리에서 일하는 중</div>
+      </div>
+    </div>
+    <div class="npc-speech" id="npc-speech">"기획서 초안을 쓰고 있어요!"</div>
+    <div class="npc-tasks" id="npc-tasks"></div>
+    <div class="npc-actions">
+      <button class="act-btn primary" id="npc-assign">📋 새 업무 지시</button>
+      <button class="act-btn" id="npc-praise">✨ 칭찬하기</button>
+      <button class="act-btn" id="npc-follow">👋 따라오게 하기</button>
+    </div>
+  </section>
+
+  <!-- ZEP 스타일 하단 단축키 가이드 바 (도움말에서 토글, 기본은 깔끔하게 숨김) -->
+  <div class="hud zep-guide" id="zep-guide" hidden>
+    <div class="zg-item"><span>이동</span><div class="zg-keys"><kbd>▲</kbd><kbd>◀</kbd><kbd>▼</kbd><kbd>▶</kbd></div></div>
+    <div class="zg-item clickable" id="zg-jump"><span>점프</span><div class="zg-keys"><kbd class="wide">SPACE</kbd></div></div>
+    <div class="zg-item clickable" id="zg-poke"><span>찌르기</span><div class="zg-keys"><kbd>Z</kbd></div></div>
+    <div class="zg-item clickable" id="zg-sit"><span>앉기</span><div class="zg-keys"><kbd>X</kbd></div></div>
+    <div class="zg-item clickable" id="zg-dance"><span>춤추기</span><div class="zg-keys"><kbd>Q</kbd></div></div>
+    <div class="zg-item"><span>리액션</span><div class="zg-keys"><kbd>1</kbd><kbd>~</kbd><kbd>5</kbd></div></div>
+    <button class="zg-close" id="zg-close" title="가이드 숨기기">×</button>
+  </div>
+
+  <!-- 하단 중앙 ZEP 스타일 플로팅 리액션 & 앱 · 미디어 바 (3.png 스타일) -->
+  <div class="zep-bottom-center" id="zep-bottom-center">
+    <!-- 앱 / 메뉴 팝오버 (⊞+ 클릭 시 오픈) -->
+    <div class="zep-apps-popover" id="zep-apps-popover" hidden>
+      <div class="zep-apps-head">
+        <strong>오피스 앱 & 기능</strong>
+        <button type="button" class="zep-icon-flat" id="zep-apps-close">×</button>
+      </div>
+      <div class="zep-apps-grid">
+        <button class="zep-app-item" id="btn-app-seat" title="내 지정 좌석 선택 & 이름표 붙이기"><span>🏷️</span><small>지정좌석</small></button>
+        <button class="zep-app-item" id="btn-board" title="실시간 공유 화이트보드 & 방명록 포스트잇"><span>🎨</span><small>보드</small></button>
+        <button class="zep-app-item" id="btn-games" title="OX 퀴즈 · 돌림판 · 보물찾기"><span>🎮</span><small>게임</small></button>
+        <button class="zep-app-item" id="btn-build" title="ZEP 맵 꾸미기 모드 (B)"><span>🪑</span><small>꾸미기</small></button>
+        <button class="zep-app-item" id="btn-zep-tools" title="타이머 · 투표 · 미디어 · 호스트 관리 · 포토존 · 저전력"><span>⊞</span><small>협업도구</small></button>
+        <button class="zep-app-item" id="btn-app-control" title="🛡️ 관리실 · 보안 관제실 (CCTV · 전체채팅 · 강퇴/밴)"><span>🛡️</span><small>관제실</small></button>
+        <button class="zep-app-item" id="btn-app-minimap" title="미니맵 열기/닫기"><span>🗺️</span><small>미니맵</small></button>
+        <button class="zep-app-item" id="btn-profile" title="내 캐릭터·닉네임 꾸미기"><span>🐾</span><small>캐릭터</small></button>
+        <button class="zep-app-item" id="btn-cam" title="시점 전환 (V)"><span>🎥</span><small>3인칭</small></button>
+        <button class="zep-app-item" id="btn-meeting" title="회의실 소집 (M)"><span>📢</span><small>회의</small></button>
+        <button class="zep-app-item" id="btn-show" title="야외 숲속 무대 공연 (P)"><span>🎵</span><small>공연</small></button>
+        <button class="zep-app-item" id="btn-work" title="평소 자리 근무로 복귀"><span>💼</span><small>복귀</small></button>
+        <button class="zep-app-item" id="btn-mobile-pad" title="모바일 가상 조이스틱 켜기/끄기"><span>📱</span><small>조이스틱</small></button>
+        <button class="zep-app-item" id="btn-help" title="조작법 안내 (H)"><span>❓</span><small>도움말</small></button>
+      </div>
+    </div>
+
+    <!-- ZEP 스타일 이모티콘 피커 & 1~5 슬롯 커스터마이징 팝오버 -->
+    <div class="emote-picker" id="emote-picker" hidden>
+      <div class="ep-head">
+        <strong>이모티콘 & 1~5 슬롯 편집</strong>
+        <button type="button" class="dm-icon-btn" id="emote-picker-close">✕</button>
+      </div>
+      <div class="ep-slot-bar" id="emote-slot-bar"></div>
+      <div class="ep-hint" id="emote-picker-hint"></div>
+      <div class="ep-grid" id="emote-picker-grid"></div>
+    </div>
+
+    <!-- 하단 중앙 ZEP 순백색 리액션 필 + 미니멀 미디어 아이콘 필 (1.png & 3.png 스타일) -->
+    <div class="zep-bottom-pills">
+      <div class="zep-center-pill">
+        <button type="button" class="zep-apps-btn" id="btn-zep-apps" title="앱 · 도구 · 메뉴 열기">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <rect x="3" y="3" width="7.5" height="7.5" rx="2"></rect>
+            <rect x="13.5" y="3" width="7.5" height="7.5" rx="2"></rect>
+            <rect x="3" y="13.5" width="7.5" height="7.5" rx="2"></rect>
+            <path d="M17.25 13.75v7M13.75 17.25h7" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"></path>
+          </svg>
+        </button>
+        <span class="zep-pill-sep"></span>
+        <div class="emote-row zep-emote-bar" id="emote-row">
+          <button data-emote="👍" data-key="1" data-label="좋아요!" title="좋아요 (1)">👍<span class="em-num">1</span></button>
+          <button data-emote="👏" data-key="2" data-label="박수!" title="박수 (2)">👏<span class="em-num">2</span></button>
+          <button data-emote="❤️" data-key="3" data-label="하트!" title="하트 (3)">❤️<span class="em-num">3</span></button>
+          <button data-emote="😆" data-key="4" data-label="하하!" title="하하 (4)">😆<span class="em-num">4</span></button>
+          <button data-emote="😂" data-key="5" data-label="빵터짐!" title="빵터짐 (5)">😂<span class="em-num">5</span></button>
+          <button type="button" class="emote-more-btn" id="btn-emote-more" title="더 많은 이모티콘 & 1~5 슬롯 편집">😊+</button>
+        </div>
+      </div>
+
+      <div class="zep-media-pill">
+        <button type="button" class="nav-btn zep-icon-media" id="btn-mic" title="마이크 켜기/끄기">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="9" y="2" width="6" height="11" rx="3"></rect>
+            <path d="M5 10a7 7 0 0 0 14 0M12 17v4M8 21h8"></path>
+          </svg>
+        </button>
+        <button type="button" class="nav-btn zep-icon-media" id="btn-video" title="화상 캠 켜기/끄기">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="6" width="14" height="12" rx="2.5"></rect>
+            <path d="m16 10 6-3v10l-6-3"></path>
+          </svg>
+        </button>
+        <button type="button" class="nav-btn zep-icon-media" id="btn-screen" title="실시간 화면공유 켜기/끄기">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="3" width="20" height="14" rx="2.5"></rect>
+            <path d="M8 21h8M12 17v4M12 13V8m0 0-2.5 2.5M12 8l2.5 2.5"></path>
+          </svg>
+        </button>
+        <button type="button" class="nav-btn zep-icon-media" id="btn-spotlight" title="전체 방송(스포트라이트) 켜기/끄기">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 11v2a2 2 0 0 0 2 2h2l5 4V5L7 9H5a2 2 0 0 0-2 2z"></path>
+            <path d="M16 9a4 4 0 0 1 0 6M19 6.5a8 8 0 0 1 0 11"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 우측 하단 ZEP 스타일 1:1 개인 메시지 버튼 (3.png 스타일) -->
+  <footer class="bottom-dock">
+    <button class="zep-dm-fab" id="btn-dm-toggle" title="개인 메시지 (DM) 열기">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+        <path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2 .01 7Z"/>
+      </svg>
+      <span>메시지</span>
+      <span class="dm-fab-badge" id="dm-unread-badge" hidden>0</span>
+    </button>
+  </footer>
+
+  <!-- ZEP 3D 맵 직접 좌석 선택 모드 안내 배너 -->
+  <div class="hud seat-pick-banner" id="seat-pick-banner" hidden>
+    <span>👆 3D 맵에서 원하는 좌석(의자 또는 이름표)을 클릭해 내 자리로 지정하세요!</span>
+    <button type="button" class="act-btn" id="btn-seat-pick-cancel">취소</button>
+  </div>
+
+  <!-- 책상 의자에 앉았을 때 하단 빠른 지정 좌석 등록 바 -->
+  <div class="hud seat-claim-bar" id="seat-claim-bar" hidden>
+    <span id="seat-claim-label">🪑 1반 1번 자리</span>
+    <button type="button" class="act-btn primary" id="btn-seat-claim-quick">🏷️ 내 지정 좌석으로 설정</button>
+    <button type="button" class="act-btn" id="btn-seat-release-quick" hidden>자리 해제</button>
+    <button type="button" class="act-btn" id="btn-seat-modal-open-quick">전체 좌석 보기</button>
+  </div>
+
+  <!-- ZEP 스타일 지정 좌석 선택 & 이름표 설정 모달 -->
+  <div class="hud feature-modal seat-modal" id="seat-modal" hidden>
+    <div class="char-modal-head">
+      <strong>🏷️ 내 지정 좌석 선택 & 책상 이름표</strong>
+      <button type="button" class="close-btn" id="seat-modal-close">×</button>
+    </div>
+    <div class="seat-my-summary" id="seat-my-summary">
+      <div class="seat-my-info">
+        <span class="seat-my-tag">내 지정 좌석</span>
+        <strong id="seat-my-current">아직 지정된 좌석이 없습니다</strong>
+      </div>
+      <div class="seat-my-btns">
+        <button type="button" class="act-btn primary" id="btn-seat-go-mine" hidden>🪑 내 자리로 이동</button>
+        <button type="button" class="act-btn" id="btn-seat-release-mine" hidden>해제</button>
+        <button type="button" class="act-btn" id="btn-seat-pick-3d">👆 3D 맵에서 직접 클릭</button>
+      </div>
+    </div>
+    <p class="seat-modal-hint">원하는 좌석을 클릭하면 책상 위 <b>3D 이름표</b>에 내 이름이 붙고, <b>내 자리 →</b> 버튼으로 언제든 바로 앉을 수 있어요!</p>
+    <div class="seat-zones-grid" id="seat-zones-grid"></div>
+  </div>
+
+  <!-- ZEP 스타일 1:1 개인 메시지(DM) 검색 & 대화 패널 -->
+  <section class="hud dm-panel" id="dm-panel" hidden>
+    <!-- 목록 & 사용자 검색 화면 -->
+    <div class="dm-view" id="dm-list-view">
+      <div class="dm-head">
+        <h3>메시지</h3>
+        <div class="dm-head-actions">
+          <button type="button" class="dm-icon-btn" id="btn-dm-mute" title="메시지 알림음 켜기/끄기">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+              <path d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2Zm6-6v-5a6 6 0 0 0-4.5-5.8V4.5a1.5 1.5 0 0 0-3 0v.7A6 6 0 0 0 6 11v5l-2 2v1h16v-1l-2-2Z"/>
+            </svg>
+          </button>
+          <button type="button" class="dm-icon-btn active" id="btn-dm-search-focus" title="사용자 검색">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+            </svg>
+          </button>
+          <button type="button" class="dm-icon-btn" id="btn-dm-close" title="닫기 (Esc)">✕</button>
+        </div>
+      </div>
+
+      <div class="dm-search-box">
+        <div class="dm-search-wrap">
+          <svg class="dm-search-ico" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+          </svg>
+          <input id="dm-search-input" type="text" maxlength="24" placeholder="사용자 검색" autocomplete="off" />
+          <button type="button" class="dm-search-clear" id="dm-search-clear" hidden title="검색어 지우기">×</button>
+        </div>
+      </div>
+
+      <div class="dm-list" id="dm-list"></div>
+    </div>
+
+    <!-- 1:1 개인 대화방 화면 -->
+    <div class="dm-view" id="dm-chat-view" hidden>
+      <div class="dm-head dm-chat-head">
+        <button type="button" class="dm-icon-btn" id="btn-dm-back" title="목록으로">←</button>
+        <div class="dm-peer-avatar" id="dm-peer-avatar"><img id="dm-peer-img" alt="" /></div>
+        <div class="dm-peer-meta">
+          <strong id="dm-peer-name">사용자</strong>
+          <small id="dm-peer-sub">접속 중</small>
+        </div>
+        <button type="button" class="dm-icon-btn" id="btn-dm-close-2" title="닫기 (Esc)">✕</button>
+      </div>
+
+      <div class="dm-messages" id="dm-messages"></div>
+
+      <form class="dm-input-form" id="dm-form" autocomplete="off">
+        <label class="attach-img-btn" title="이미지 보내기">
+          🖼️
+          <input id="dm-img-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden />
+        </label>
+        <input id="dm-input" type="text" maxlength="200" placeholder="메시지를 입력해 주세요" />
+        <button type="submit" class="send-btn zep-send-btn" id="btn-dm-send" title="보내기 (Enter)">↑</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ZEP 오브젝트 웹/유튜브 임베드 모달 (상단 바 드래그로 자유 이동 가능!) -->
+  <div class="hud feature-modal embed-modal" id="embed-modal" hidden>
+    <div class="char-modal-head embed-drag-head" title="상단 바를 드래그해서 화면 위치를 자유롭게 옮길 수 있어요">
+      <div class="embed-head-title-wrap">
+        <span class="embed-drag-grip" aria-hidden="true">⋮⋮</span>
+        <strong id="embed-title">📺 유튜브 · 웹페이지 공유 스크린</strong>
+      </div>
+      <div class="dm-head-actions">
+        <button type="button" class="act-btn" id="embed-mini-toggle" title="작은 미니 플레이어로 축소">🗗 미니</button>
+        <button type="button" class="act-btn" id="embed-reset-pos" title="화면 중앙으로 위치 초기화">⌖ 중앙</button>
+        <a id="embed-open-ext" class="act-btn" href="#" target="_blank" rel="noopener noreferrer" hidden>↗ 새 탭</a>
+        <button class="close-btn" id="embed-close">×</button>
+      </div>
+    </div>
+    <form class="embed-form" id="embed-form" autocomplete="off">
+      <input id="embed-url-input" type="text" placeholder="유튜브 링크 또는 웹페이지 URL (https://...)" />
+      <button type="submit" class="act-btn primary">공유 띄우기</button>
+      <button type="button" class="act-btn" id="embed-clear">지우기</button>
+    </form>
+    <div class="preset-list" style="margin-bottom:8px">
+      <button type="button" class="preset-chip" data-embed-preset="https://www.youtube.com/watch?v=rFZHOHl-L8A" data-embed-title="☕ Lo-Fi 작업 음악 스트림">☕ Lo-Fi 작업음악</button>
+      <button type="button" class="preset-chip" data-embed-preset="https://www.youtube.com/watch?v=Dx5qFachd3A" data-embed-title="🎧 잔잔한 24시간 카페 피아노 재즈">🎧 카페 브금</button>
+      <button type="button" class="preset-chip" data-embed-preset="https://ko.m.wikipedia.org/wiki/%EB%A8%BC%EC%9E%91%EA%B7%80" data-embed-title="📖 먼작귀 위키백과">📖 먼작귀 위키</button>
+    </div>
+    <div class="embed-stage">
+      <div class="embed-empty" id="embed-empty">📺 유튜브 링크나 웹사이트 주소를 입력하면 모든 접속자와 함께 볼 수 있습니다!<br/><small>(일부 사이트는 보안 정책상 '↗ 새 탭'으로 열어야 할 수 있습니다)</small></div>
+      <div class="embed-loading" id="embed-loading" hidden>⏳ 화면을 불러오는 중...</div>
+      <div class="embed-external-card" id="embed-external-card" hidden>
+        <div class="embed-ext-badge" id="embed-ext-host">namu.wiki</div>
+        <h4 id="embed-ext-title">📖 먼작귀 나무위키</h4>
+        <p class="embed-ext-desc" id="embed-ext-desc">이 사이트는 보안 정책(X-Frame-Options)으로 창 내부 임베드를 차단하고 있어요.<br/>아래 버튼으로 바로 열어 메타버스와 함께 볼 수 있습니다!</p>
+        <div class="embed-ext-url" id="embed-ext-url">https://namu.wiki/w/먼작귀</div>
+        <div class="embed-ext-actions">
+          <a id="embed-ext-tab" class="act-btn primary" href="#" target="_blank" rel="noopener noreferrer">↗ 새 탭에서 열기</a>
+          <button type="button" class="act-btn" id="embed-ext-popup">🪟 팝업 창으로 나란히 보기</button>
+        </div>
+      </div>
+      <iframe id="embed-iframe" hidden allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    </div>
+  </div>
+
+  <!-- ZEP 협업 도구 통합 모달 (타이머 / 투표 / 호스트 관리 / 편의 기능) -->
+  <div class="hud feature-modal" id="tools-modal" hidden>
+    <div class="char-modal-head">
+      <div class="modal-tabs">
+        <button class="tab-btn on" data-tool-tab="timer">⏱️ 타이머</button>
+        <button class="tab-btn" data-tool-tab="poll">🗳️ 투표</button>
+        <button class="tab-btn" data-tool-tab="host">🛡️ 호스트</button>
+        <button class="tab-btn" data-tool-tab="extras">✨ 편의·포토</button>
+      </div>
+      <button class="close-btn" id="tools-close">×</button>
+    </div>
+
+    <!-- 타이머 탭 -->
+    <div id="pane-tool-timer">
+      <form class="ox-form" id="timer-form" autocomplete="off">
+        <div class="ox-row">
+          <label class="field" style="flex:2">
+            <span>타이머 이름</span>
+            <input id="timer-label-input" type="text" maxlength="20" value="회의 타이머" placeholder="예: 발표 시간, 포모도로" />
+          </label>
+          <label class="field" style="flex:1">
+            <span>분 (1~60)</span>
+            <input id="timer-min-input" type="number" min="1" max="60" value="5" />
+          </label>
+          <button type="submit" class="act-btn primary" style="height:40px;align-self:end;padding:0 16px">▶ 시작</button>
+        </div>
+      </form>
+      <div class="preset-label">빠른 프리셋 (전원 공유)</div>
+      <div class="preset-list">
+        <button type="button" class="preset-chip" data-timer-preset="180" data-timer-label="⚡ 3분 스탠드업">⚡ 3분 스탠드업</button>
+        <button type="button" class="preset-chip" data-timer-preset="300" data-timer-label="🎤 5분 발표">🎤 5분 발표</button>
+        <button type="button" class="preset-chip" data-timer-preset="600" data-timer-label="💡 10분 아이디어">💡 10분 회의</button>
+        <button type="button" class="preset-chip" data-timer-preset="1500" data-timer-label="🍅 25분 포모도로">🍅 25분 포모도로</button>
+      </div>
+    </div>
+
+    <!-- 투표 탭 -->
+    <div id="pane-tool-poll" hidden>
+      <form class="ox-form" id="poll-create-form" autocomplete="off">
+        <label class="field">
+          <span>투표 질문</span>
+          <input id="poll-q-input" type="text" maxlength="70" value="오늘 점심 메뉴는 무엇이 좋을까요?" />
+        </label>
+        <label class="field">
+          <span>선택지 (쉼표로 구분, 2~5개)</span>
+          <input id="poll-opts-input" type="text" maxlength="120" value="라멘 🍜, 돈까스 🍛, 파스타 🍝, 샐러드 🥗" />
+        </label>
+        <button type="submit" class="enter-btn" style="padding:10px 20px;font-size:14px">🗳️ 전원에게 실시간 투표 시작!</button>
+      </form>
+    </div>
+
+    <!-- 호스트 관리 탭 -->
+    <div id="pane-tool-host" hidden>
+      <div class="host-actions-grid">
+        <button type="button" class="act-btn primary" id="btn-host-gather">📢 전원 내 위치로 소집 (Gather)</button>
+        <button type="button" class="act-btn" id="btn-host-mute">🔇 전체 마이크 음소거</button>
+      </div>
+      <div class="invite-box" style="margin-top:10px">
+        <div class="invite-label" id="host-lock-state">🔓 현재 공개 입장</div>
+        <form class="invite-row" id="host-lock-form" autocomplete="off">
+          <input id="host-pass-input" type="password" maxlength="20" placeholder="입장 비밀번호 설정..." style="flex:1;padding:7px 10px;border-radius:10px;border:1px solid var(--border)" />
+          <button type="submit" class="act-btn primary">🔐 잠그기</button>
+          <button type="button" class="act-btn" id="btn-host-unlock" hidden>🔓 해제</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 편의·포토·미디어 탭 -->
+    <div id="pane-tool-extras" hidden>
+      <div class="host-actions-grid">
+        <button type="button" class="act-btn primary" id="btn-photo">📸 포토존 단체샷 촬영</button>
+        <button type="button" class="act-btn" id="btn-open-embed-from-tools">📺 유튜브·웹 공유 스크린</button>
+        <button type="button" class="act-btn" id="btn-bgm-toggle">🎵 공간 BGM ON</button>
+        <button type="button" class="act-btn" id="btn-lowpower">🔋 저전력 모드</button>
+      </div>
+      <p class="invite-note">💡 바닥을 클릭하면 클릭한 곳으로 자동 이동하며, 좌측 <b>접속자</b> 탭에서 <b>👣 따라가기</b>를 눌러 친구를 자동으로 따라다닐 수 있습니다!</p>
+    </div>
+  </div>
+
+  <!-- 4단계: ZEP 맵 꾸미기 팔레트 바 -->
+  <div class="hud build-bar" id="build-bar" hidden>
+    <div class="build-row">
+      <span class="dance-badge">🪑 맵 꾸미기</span>
+      <div class="build-palette" id="build-palette"></div>
+    </div>
+    <div class="build-row build-tools">
+      <input id="build-sign-input" type="text" maxlength="14" placeholder="간판 문구 입력 (예: 서윤 카페)" value="환영해요!" hidden />
+      <button class="dance-btn" id="btn-build-rot" title="45° 회전 (R)">🔄 회전 (R)</button>
+      <button class="dance-btn" id="btn-build-del" title="클릭한 커스텀 가구 삭제">🗑️ 삭제 모드</button>
+      <button class="dance-btn" id="btn-build-clear" title="배치한 가구 전체 삭제">🧹 전체 초기화</button>
+      <button class="dance-btn stop" id="btn-build-exit">✅ 완료 (Esc)</button>
+    </div>
+  </div>
+
+  <!-- 4단계: 모바일 가상 조이스틱 & 터치 액션 버튼 -->
+  <div id="mobile-controls" hidden>
+    <div class="joy-base" id="joy-base">
+      <div class="joy-knob" id="joy-knob"></div>
+    </div>
+    <div class="touch-actions">
+      <button class="touch-btn main" id="t-jump">⬆️</button>
+      <button class="touch-btn" id="t-interact">💬</button>
+      <button class="touch-btn" id="t-poke">👉</button>
+      <button class="touch-btn" id="t-sit">🪑</button>
+      <button class="touch-btn" id="t-dance">💃</button>
+    </div>
+  </div>
+
+  <!-- 2단계: 공유 화이트보드 & 방명록 포스트잇 모달 -->
+  <div class="hud feature-modal" id="board-modal" hidden>
+    <div class="char-modal-head">
+      <div class="modal-tabs">
+        <button class="tab-btn on" data-board-tab="wb">🎨 공유 화이트보드</button>
+        <button class="tab-btn" data-board-tab="notes">📌 방명록 포스트잇</button>
+      </div>
+      <button class="close-btn" id="board-close">×</button>
+    </div>
+
+    <div id="pane-wb">
+      <div class="wb-toolbar">
+        <div class="wb-colors">
+          <button class="swatch active" data-wb-color="#3C2F27" style="background:#3C2F27" title="잉크"></button>
+          <button class="swatch" data-wb-color="#EE6C8E" style="background:#EE6C8E" title="핑크"></button>
+          <button class="swatch" data-wb-color="#58B98A" style="background:#58B98A" title="민트"></button>
+          <button class="swatch" data-wb-color="#4B9CE2" style="background:#4B9CE2" title="블루"></button>
+          <button class="swatch" data-wb-color="#F09D51" style="background:#F09D51" title="오렌지"></button>
+          <button class="swatch" data-wb-color="#FFFDF9" style="background:#FFFDF9;border-color:#ccc" title="지우개"></button>
+        </div>
+        <div class="wb-sizes">
+          <button class="act-btn" data-wb-size="3">얇게</button>
+          <button class="act-btn active" data-wb-size="6">보통</button>
+          <button class="act-btn" data-wb-size="14">굵게</button>
+        </div>
+        <button class="act-btn" id="wb-clear">🗑️ 전체 지우기</button>
+      </div>
+      <canvas id="wb-canvas" width="600" height="340"></canvas>
+      <p class="invite-note">✨ 여러 접속자가 동시에 함께 그릴 수 있고, 그림은 자동으로 저장됩니다!</p>
+    </div>
+
+    <div id="pane-notes" hidden>
+      <form class="note-form" id="note-form" autocomplete="off">
+        <input id="note-input" type="text" maxlength="100" placeholder="오피스 방문 소감이나 메모를 남겨 주세요!" />
+        <div class="note-colors" id="note-colors"></div>
+        <button type="submit" class="act-btn primary">📌 붙이기</button>
+      </form>
+      <div class="notes-grid" id="notes-grid"></div>
+    </div>
+  </div>
+
+  <!-- 2단계: 미니게임 아케이드 모달 (OX 퀴즈 / 3D 액션 / 파티게임 / 돌림판 / 보물찾기) -->
+  <div class="hud feature-modal games-modal-wide" id="games-modal" hidden>
+    <div class="char-modal-head">
+      <div class="modal-tabs games-tabs-wrap">
+        <button class="tab-btn on" data-game-tab="ox">⭕❌ OX 퀴즈</button>
+        <button class="tab-btn" data-game-tab="action">🏃 3D 액션</button>
+        <button class="tab-btn" data-game-tab="party">🎲 파티게임</button>
+        <button class="tab-btn" data-game-tab="wheel">🎡 돌림판</button>
+        <button class="tab-btn" data-game-tab="treasure">💎 보물찾기</button>
+      </div>
+      <button class="close-btn" id="games-close">×</button>
+    </div>
+
+    <div id="pane-ox">
+      <form class="ox-form" id="quiz-start-form" autocomplete="off">
+        <label class="field">
+          <span>OX 퀴즈 문제</span>
+          <input id="quiz-q-input" type="text" maxlength="80" placeholder="예: 오늘 점심은 라멘이 최고다!" value="치이카와의 단짝 친구 파란 앞머리 고양이는 하치와레다!" />
+        </label>
+        <div class="ox-row">
+          <label class="field" style="flex:1">
+            <span>정답</span>
+            <select id="quiz-a-select">
+              <option value="O">⭕ O (맞다)</option>
+              <option value="X">❌ X (틀리다)</option>
+            </select>
+          </label>
+          <button type="submit" class="act-btn primary" style="height:40px;align-self:end;padding:0 18px">🚀 10초 퀴즈 시작!</button>
+        </div>
+      </form>
+      <div class="ox-preset-head">
+        <div class="preset-label" style="margin:0">추천 문제 카테고리 (<span id="quiz-preset-count">0</span>문제)</div>
+        <div class="ox-random-btns">
+          <button type="button" class="act-btn" id="btn-quiz-random">🎲 랜덤 뽑기</button>
+          <button type="button" class="act-btn primary" id="btn-quiz-random-go">⚡ 랜덤 바로 시작</button>
+        </div>
+      </div>
+      <div class="preset-list ox-cat-tabs" id="quiz-cat-tabs"></div>
+      <div class="preset-list ox-preset-scroll" id="quiz-presets"></div>
+      <p class="invite-note">💡 퀴즈가 시작되면 <b>OX 퀴즈 광장</b>으로 자동 이동합니다! 10초 안에 O 또는 X 발판으로 이동하세요!</p>
+    </div>
+
+    <!-- 3D 월드 실시간 액션 게임 탭 (ZEP 대표 게임 3종!) -->
+    <div id="pane-action" hidden>
+      <div class="action-games-grid">
+        <div class="action-game-card">
+          <div class="ag-ico">🚦</div>
+          <h4>무궁화 꽃이 피었습니다</h4>
+          <p>초록불에 북쪽 빨간 결승선까지 전력 질주! 술래가 뒤돌아보는 빨간불에 움직이면 출발선으로 복귀!</p>
+          <button type="button" class="act-btn primary" id="btn-start-mugunghwa">🚦 바로 시작 (자동 이동)</button>
+        </div>
+        <div class="action-game-card">
+          <div class="ag-ico">🪙</div>
+          <h4>30초 황금 코인 러시</h4>
+          <p>오피스 곳곳에 흩어진 황금 코인(+1)과 핑크 스타(+3)를 30초 안에 최대한 많이 모으는 타임어택!</p>
+          <button type="button" class="act-btn primary" id="btn-start-coinrush">🪙 30초 타임어택 시작</button>
+        </div>
+        <div class="action-game-card">
+          <div class="ag-ico">💣</div>
+          <h4>폭탄 피하기 생존전</h4>
+          <p>동쪽 광장에 쏟아지는 빨간 폭발 경고 원을 피해 30초 동안 5웨이브를 버텨내는 서바이벌! (하트 3개)</p>
+          <button type="button" class="act-btn primary" id="btn-start-bombdodge">💣 생존전 시작 (자동 이동)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 파티 보드게임 탭 (가위바위보 · 전체 공유 주사위 · 사다리 타기) -->
+    <div id="pane-party" hidden>
+      <div class="party-grid">
+        <div class="party-card">
+          <div class="party-card-head"><strong>✊✌️✋ 먼작귀 가위바위보 (3연승 폭죽!)</strong></div>
+          <div class="rps-btns">
+            <button type="button" class="act-btn" data-rps="scissors">✌️ 가위</button>
+            <button type="button" class="act-btn" data-rps="rock">✊ 바위</button>
+            <button type="button" class="act-btn" data-rps="paper">✋ 보</button>
+          </div>
+          <div class="rps-result" id="rps-result">가위 · 바위 · 보 중 하나를 골라 대결해 보세요!</div>
+        </div>
+
+        <div class="party-card">
+          <div class="party-card-head"><strong>🎲 전체 공유 행운 주사위</strong></div>
+          <div class="rps-btns">
+            <button type="button" class="act-btn primary" id="btn-dice-6">🎲 1~6 주사위</button>
+            <button type="button" class="act-btn" id="btn-dice-100">🎰 1~100 주사위</button>
+          </div>
+          <div class="dice-result" id="dice-result">결과가 전체 채팅에도 실시간 공유돼요!</div>
+        </div>
+
+        <div class="party-card party-card-full">
+          <div class="party-card-head">
+            <strong>🪜 ZEP 미니 사다리 타기</strong>
+            <button type="button" class="act-btn primary" id="btn-ladder-go">🪜 사다리 실행!</button>
+          </div>
+          <div class="ladder-inputs">
+            <input type="text" id="ladder-names" value="랏코, 하치와레, 우사기, 치이카와" placeholder="참가자 (쉼표 구분, 2~6명)" />
+            <input type="text" id="ladder-prizes" value="커피 쏘기 ☕, 간식 쏘기 🍰, 통과 ✨, 면제 👑" placeholder="결과 항목 (쉼표 구분)" />
+          </div>
+          <canvas id="ladder-canvas" width="540" height="170"></canvas>
+          <div class="ladder-result" id="ladder-result">참가자와 결과를 적고 [사다리 실행!]을 눌러 보세요.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="pane-wheel" hidden>
+      <div class="wheel-layout">
+        <canvas id="wheel-canvas" width="250" height="250"></canvas>
+        <div class="wheel-controls">
+          <label class="field">
+            <span>항목 (쉼표로 구분)</span>
+            <input id="wheel-items-input" type="text" />
+          </label>
+          <div class="preset-list">
+            <button type="button" class="preset-chip" data-wheel-preset="lunch">🍜 점심 메뉴</button>
+            <button type="button" class="preset-chip" data-wheel-preset="coffee">☕ 커피 내기</button>
+            <button type="button" class="preset-chip" data-wheel-preset="duty">🎲 당번 뽑기</button>
+          </div>
+          <button type="button" class="enter-btn" id="btn-wheel-spin" style="padding:10px 20px;font-size:14px">🎡 돌림판 돌리기!</button>
+          <div class="wheel-result" id="wheel-result">항목을 적고 돌림판을 돌려 보세요!</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="pane-treasure" hidden>
+      <div class="treasure-box">
+        <div class="treasure-score">발견한 황금 보물: <strong id="treasure-count">0 / 5</strong></div>
+        <div class="treasure-hints" id="treasure-hints"></div>
+        <button type="button" class="act-btn primary" id="btn-treasure-reset">🔄 새 위치에 보물 5개 다시 숨기기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 친구 초대 / 동시 접속 안내 모달 -->
+  <div class="hud help-modal" id="invite-modal" hidden>
+    <div class="char-modal-head">
+      <strong>🔗 여러 명 동시 접속 & 친구 초대</strong>
+      <button class="close-btn" id="invite-close">×</button>
+    </div>
+    <div class="invite-body">
+      <div class="invite-box">
+        <div class="invite-label">1) 🔒 같은 Wi-Fi 접속 주소 (크롬/스마트폰 캠·마이크 지원!)</div>
+        <div class="invite-row">
+          <code id="invite-lan-url">불러오는 중...</code>
+          <button class="act-btn primary" id="btn-copy-lan">복사</button>
+        </div>
+        <p class="invite-note">같은 공유기에 연결된 크롬·스마트폰에서 위 <b>https://</b> 주소로 접속하면 캠과 마이크를 바로 쓸 수 있어요! (처음 1회 '고급 → 계속 진행' 클릭)</p>
+      </div>
+      <div class="invite-box">
+        <div class="invite-label">2) 다른 지역 친구 초대 (인터넷 공개 링크 만들기)</div>
+        <div class="invite-row">
+          <code id="invite-tunnel-cmd">cloudflared tunnel --url http://localhost:4327</code>
+          <button class="act-btn" id="btn-copy-tunnel">복사</button>
+        </div>
+        <p class="invite-note">터미널에서 실행하면 생기는 <b>https://...trycloudflare.com</b> 주소를 카톡으로 공유하면 어디서든 동시 접속 가능해요!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 조작법 안내 모달 -->
+  <div class="hud help-modal" id="help-modal" hidden>
+    <div class="char-modal-head">
+      <strong>먼작귀 AI 오피스 조작법</strong>
+      <button class="close-btn" id="help-close">×</button>
+    </div>
+    <ul class="help-list">
+      <li><kbd>▲ ◀ ▼ ▶</kbd> / <kbd>W A S D</kbd> <span>이동 (<kbd>Shift</kbd> 빠르게 달리기)</span></li>
+      <li><kbd>Space</kbd> <span>점프</span> · <kbd>Z</kbd> <span>찌르기 (근처 친구·직원 콕!)</span> · <kbd>X</kbd> <span>앉기 (어디서나 앉기)</span></li>
+      <li><kbd>Q</kbd> (또는 <kbd>O</kbd>, <kbd>G</kbd>) <span>춤추기 (LIVE STAGE 조명·BGM 연동)</span> · <kbd>1 ~ 5</kbd> <span>ZEP 리액션</span></li>
+      <li><kbd>마우스 드래그</kbd> <span>카메라 360° 회전 · <kbd>휠</kbd> 확대/축소</span></li>
+      <li><kbd>Enter</kbd> <span>채팅 입력 (<b>전체 / 근처</b> 전환, <code>@직원명</code> 호출 가능!)</span></li>
+      <li><kbd>E</kbd> 또는 <kbd>클릭</kbd> <span>직원 대화 · 오브젝트 사용</span> · <kbd>M</kbd> <span>회의</span> · <kbd>P</kbd> <span>공연</span> · <kbd>V</kbd> <span>시점</span> · <kbd>T</kbd> <span>낮/밤</span></li>
+    </ul>
+  </div>
+
+  <!-- 3D 실시간 미니게임 진행 HUD (무궁화 꽃 · 코인 러시 · 폭탄 생존) -->
+  <div class="hud minigame-hud" id="minigame-hud" hidden>
+    <span class="mg-badge" id="mg-hud-badge">🎮 미니게임</span>
+    <div class="mg-body">
+      <strong id="mg-hud-status">진행 중</strong>
+      <small id="mg-hud-detail"></small>
+    </div>
+    <button type="button" class="act-btn" id="mg-hud-stop">⏹ 종료</button>
+  </div>
+
+  <!-- 보물찾기 전체 클리어 축하 2D 폭죽·컨페티 오버레이 & 배너 -->
+  <canvas id="celebration-canvas" hidden aria-hidden="true"></canvas>
+  <div class="hud treasure-clear-banner" id="treasure-clear-banner" hidden>
+    <div class="tc-crown">👑🎉</div>
+    <div class="tc-body">
+      <strong>보물찾기 ALL CLEAR!</strong>
+      <div id="treasure-clear-who">숨겨진 황금 보물 5개를 모두 찾았어요!</div>
+    </div>
+    <div class="tc-actions">
+      <button type="button" class="act-btn primary" id="treasure-clear-replay">🔄 다시 숨기기</button>
+      <button type="button" class="close-btn" id="treasure-clear-close" title="닫기">×</button>
+    </div>
+  </div>
+
+  <!-- 일회성 콕 찌르기 플로팅 알림 (채팅/메시지에 기록 남기지 않고 자동으로 사라짐) -->
+  <div class="poke-toast" id="poke-toast" hidden aria-live="polite">
+    <span class="poke-toast-ico">👉</span>
+    <span id="poke-toast-text">누군가 콕 찔렀어요!</span>
+  </div>
+
+  <!-- 관제실 관리자 경고 배너 -->
+  <div class="hud admin-warn-banner" id="admin-warn-banner" hidden>
+    <span id="admin-warn-text">⚠️ 관제실 관리자 경고입니다.</span>
+  </div>
+
+  <!-- 🛡️ 관리실 · 보안 관제실 (구역별 라이브 CCTV 멀티캠 + 전체 채팅/DM 감시 + 강퇴/밴 관리자 권한) -->
+  <div class="hud feature-modal control-room-modal" id="control-room-modal" hidden>
+    <div class="ctrl-head">
+      <div class="ctrl-head-left">
+        <span class="ctrl-rec-pill"><i class="ctrl-rec-dot"></i> LIVE CCTV</span>
+        <strong>🛡️ 관리실 · 보안 관제실</strong>
+        <span class="ctrl-admin-badge" id="ctrl-admin-badge" hidden>최고 관리자 권한 ON</span>
+      </div>
+      <div class="ctrl-head-actions">
+        <button type="button" class="ctrl-top-btn" id="ctrl-nv-toggle" title="야간투시/컬러 CCTV 모드 전환">🌙 야간투시</button>
+        <button type="button" class="ctrl-top-btn" id="ctrl-grid-reset" title="전체 구역 멀티캠 보기">⊞ 전체 캠</button>
+        <button type="button" class="close-btn ctrl-close-btn" id="ctrl-close" title="닫기 (Esc)">×</button>
+      </div>
+    </div>
+
+    <!-- 관리자 인증 잠금 화면 -->
+    <div class="ctrl-auth-view" id="ctrl-auth-view">
+      <div class="ctrl-auth-card">
+        <div class="ctrl-auth-icon">🛡️📹</div>
+        <h3>보안 관제실 관리자 인증</h3>
+        <p>구역별 실시간 CCTV 모니터링, 전체 채팅·프라이빗·1:1 DM 통합 감시 및<br/><b>강퇴 · 영구 밴 · 채팅 금지 · 강제 음소거</b> 등 강력한 관리자 권한을 활성화합니다.</p>
+        <form class="ctrl-auth-form" id="ctrl-auth-form" autocomplete="off">
+          <input id="ctrl-pass-input" type="password" maxlength="40" placeholder="관리자 보안 코드 입력..." />
+          <button type="submit" class="enter-btn" style="padding:10px 22px;font-size:14px">🔓 관리자 권한 활성화</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 인증 완료 후 통합 보안 관제 대시보드 -->
+    <div class="ctrl-dash-view" id="ctrl-dash-view" hidden>
+      <!-- 좌측: 구역별 실시간 3D CCTV 멀티캠 월 -->
+      <div class="ctrl-cctv-col">
+        <div class="ctrl-ptz-bar" id="cctv-ptz-bar" hidden>
+          <span>🎛️ 단독 CCTV 확대 모드 (화면 클릭 시 전체 캠 복귀)</span>
+          <div class="ctrl-ptz-btns">
+            <button type="button" class="ctrl-top-btn" id="ctrl-ptz-left">◀ 좌회전</button>
+            <button type="button" class="ctrl-top-btn" id="ctrl-ptz-right">우회전 ▶</button>
+            <button type="button" class="ctrl-top-btn primary" id="ctrl-ptz-warp">📍 이 구역으로 즉시 이동</button>
+          </div>
+        </div>
+        <div class="cctv-grid" id="cctv-grid"></div>
+      </div>
+
+      <!-- 우측: 통합 채팅·DM 감시 / 접속자 제재 / 밴 목록 -->
+      <div class="ctrl-side-col">
+        <div class="ctrl-tabs">
+          <button type="button" class="ctrl-tab on" data-ctrl-tab="logs">💬 채팅·DM 감시</button>
+          <button type="button" class="ctrl-tab" data-ctrl-tab="users">👥 접속자 (<span id="ctrl-user-count">1</span>)</button>
+          <button type="button" class="ctrl-tab" data-ctrl-tab="bans">⛔ 밴 목록 (<span id="ctrl-ban-count">0</span>)</button>
+          <button type="button" class="ctrl-tab" data-ctrl-tab="inquiries">📨 문의 (<span id="ctrl-inq-count">0</span>)</button>
+        </div>
+
+        <!-- 탭 1: 전체 채팅 & DM 감시 로그 -->
+        <div class="ctrl-pane" id="ctrl-pane-logs">
+          <div class="ctrl-filter-bar">
+            <button type="button" class="ctrl-chip on" data-ctrl-filter="all">전체</button>
+            <button type="button" class="ctrl-chip" data-ctrl-filter="public">일반</button>
+            <button type="button" class="ctrl-chip" data-ctrl-filter="private">🔒 프라이빗</button>
+            <button type="button" class="ctrl-chip" data-ctrl-filter="dm">💌 DM·귓속말</button>
+            <button type="button" class="ctrl-chip" data-ctrl-filter="system">시스템</button>
+          </div>
+          <input type="text" id="ctrl-log-search" class="ctrl-search" placeholder="닉네임 · 구역 · 메시지 내용 검색..." autocomplete="off" />
+          <div class="ctrl-scroll-list" id="ctrl-log-list"></div>
+        </div>
+
+        <!-- 탭 2: 실시간 접속자 강력 제재 제어 -->
+        <div class="ctrl-pane" id="ctrl-pane-users" hidden>
+          <div class="ctrl-pane-note">💡 접속자를 클릭해 이동·관제실 소환·경고·채팅금지·마이크 음소거·강퇴·영구 밴을 즉시 실행할 수 있습니다.</div>
+          <div class="ctrl-scroll-list" id="ctrl-user-list"></div>
+        </div>
+
+        <!-- 탭 3: 영구 차단(밴) 목록 & 수동 사전 차단 -->
+        <div class="ctrl-pane" id="ctrl-pane-bans" hidden>
+          <form class="ctrl-manual-ban" id="ctrl-manual-ban-form" autocomplete="off">
+            <input type="text" id="ctrl-manual-ban-name" maxlength="16" placeholder="차단할 닉네임" />
+            <input type="text" id="ctrl-manual-ban-reason" maxlength="60" placeholder="차단 사유 (선택)" />
+            <button type="submit" class="ctrl-act-btn danger-solid">⛔ 사전 밴</button>
+          </form>
+          <div class="ctrl-scroll-list" id="ctrl-ban-list"></div>
+        </div>
+
+        <!-- 탭 4: 사용자 문의 접수 · 답변 -->
+        <div class="ctrl-pane" id="ctrl-pane-inquiries" hidden>
+          <div class="ctrl-filter-bar">
+            <button type="button" class="ctrl-chip on" data-inq-filter="open">미답변</button>
+            <button type="button" class="ctrl-chip" data-inq-filter="answered">답변 완료</button>
+            <button type="button" class="ctrl-chip" data-inq-filter="closed">종료</button>
+            <button type="button" class="ctrl-chip" data-inq-filter="all">전체</button>
+          </div>
+          <div class="ctrl-scroll-list" id="ctrl-inq-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📨 관리자에게 문의하기 -->
+  <div class="hud feature-modal inquiry-modal" id="inquiry-modal" hidden>
+    <div class="char-modal-head">
+      <div class="modal-tabs">
+        <button type="button" class="tab-btn on" data-inq-tab="write">✍️ 문의하기</button>
+        <button type="button" class="tab-btn" data-inq-tab="mine">📋 내 문의 내역 <span class="inq-badge" id="inq-mine-badge" hidden>N</span></button>
+      </div>
+      <button type="button" class="close-btn" id="inquiry-close">×</button>
+    </div>
+    <div class="inq-pane" id="inq-pane-write">
+      <p class="inq-hint">불편한 점, 신고, 버그 제보 등을 관리자에게 보낼 수 있어요. 관리자가 답변하면 알림으로 알려 드려요.</p>
+      <form class="inq-form" id="inquiry-form" autocomplete="off">
+        <label class="inq-label" for="inquiry-category">문의 유형</label>
+        <select id="inquiry-category">
+          <option value="general">💬 일반 문의</option>
+          <option value="report">🚨 사용자 신고</option>
+          <option value="bug">🐞 버그 · 오류 제보</option>
+          <option value="account">👤 계정 · 제재 문의</option>
+          <option value="etc">📎 기타</option>
+        </select>
+        <label class="inq-label" for="inquiry-text">내용</label>
+        <textarea id="inquiry-text" maxlength="600" rows="6" placeholder="문의 내용을 자세히 적어 주세요 (최대 600자)"></textarea>
+        <div class="inq-form-foot">
+          <span class="inq-count" id="inquiry-count">0 / 600</span>
+          <button type="submit" class="act-btn primary" id="inquiry-submit">📨 관리자에게 보내기</button>
+        </div>
+      </form>
+    </div>
+    <div class="inq-pane" id="inq-pane-mine" hidden>
+      <div class="inq-list" id="inquiry-mine-list"></div>
+    </div>
+  </div>
+
+  <!-- 강퇴 / 영구 밴 차단 오버레이 -->
+  <div id="moderation-block-overlay" hidden>
+    <div class="mod-block-card">
+      <h2 id="mod-block-title">⛔ 접속이 제한되었습니다</h2>
+      <p class="mod-block-sub" id="mod-block-sub"></p>
+      <div class="mod-block-reason" id="mod-block-reason"></div>
+      <button type="button" class="enter-btn" id="mod-block-reload" hidden>🔄 다시 입장하기</button>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
